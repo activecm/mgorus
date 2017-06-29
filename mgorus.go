@@ -8,48 +8,30 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type hooker struct {
+//Hooker is a logrus hooker for mongodb
+type Hooker struct {
 	c *mgo.Collection
 }
 
-type M bson.M
-
-func NewHooker(mgoUrl, db, collection string) (*hooker, error) {
-	session, err := mgo.Dial(mgoUrl)
+//NewHooker dials a mongodb server without authentication or encryption
+//and readies the hook to place logs inside of the given collection
+func NewHooker(mgoURL, db, collection string) (*Hooker, error) {
+	session, err := mgo.Dial(mgoURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return &hooker{c: session.DB(db).C(collection)}, nil
+	return &Hooker{c: session.DB(db).C(collection)}, nil
 }
 
-func NewHookerWithAuth(mgoUrl, db, collection, user, pass string) (*hooker, error) {
-	session, err := mgo.Dial(mgoUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := session.DB(db).Login(user, pass); err != nil {
-		return nil, fmt.Errorf("Failed to login to mongodb: %v", err)
-	}
-
-	return &hooker{c: session.DB(db).C(collection)}, nil
+//NewHookerFromSession makes a copy of an existing mongodb session
+//and readies the hook to place logs inside of the given collection
+func NewHookerFromSession(session *mgo.Session, db, collection string) *Hooker {
+	return &Hooker{c: session.Copy().DB(db).C(collection)}
 }
 
-func NewHookerWithAuthDb(mgoUrl, authdb, db, collection, user, pass string) (*hooker, error) {
-	session, err := mgo.Dial(mgoUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := session.DB(authdb).Login(user, pass); err != nil {
-		return nil, fmt.Errorf("Failed to login to mongodb: %v", err)
-	}
-
-	return &hooker{c: session.DB(db).C(collection)}, nil
-}
-
-func (h *hooker) Fire(entry *logrus.Entry) error {
+//Fire places a logrus entry into the log collection
+func (h *Hooker) Fire(entry *logrus.Entry) error {
 	data := make(logrus.Fields)
 	data["Level"] = entry.Level
 	data["Time"] = entry.Time
@@ -63,7 +45,7 @@ func (h *hooker) Fire(entry *logrus.Entry) error {
 		}
 	}
 
-	mgoErr := h.c.Insert(M(data))
+	mgoErr := h.c.Insert(bson.M(data))
 
 	if mgoErr != nil {
 		return fmt.Errorf("Failed to send log entry to mongodb: %v", mgoErr)
@@ -72,7 +54,8 @@ func (h *hooker) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func (h *hooker) Levels() []logrus.Level {
+//Levels returns the logrus levels the hook supports
+func (h *Hooker) Levels() []logrus.Level {
 	return []logrus.Level{
 		logrus.PanicLevel,
 		logrus.FatalLevel,
