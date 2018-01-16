@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 )
 
 //Hooker is a logrus hooker for mongodb
