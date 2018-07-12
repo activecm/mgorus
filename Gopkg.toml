@@ -21,9 +21,9 @@
 
 
 [[constraint]]
-  name = "github.com/sirupsen/logrus"
-  version = "1.0.4"
+  branch = "master"
+  name = "github.com/globalsign/mgo"
 
 [[constraint]]
-  branch = "v2"
-  name = "gopkg.in/mgo.v2"
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.5"
